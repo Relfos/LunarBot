@@ -32,7 +32,7 @@ namespace LunarLabs.Bots
 
             if (channel == null)
             {
-                var user = _client.GetUser(id);
+                var user = _client.GetUserAsync(id).Result;
 
                 if (user == null)
                 {

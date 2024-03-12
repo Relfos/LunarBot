@@ -23,12 +23,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net.Core" Version="3.9.0" />
-    <PackageReference Include="Discord.Net.WebSocket" Version="3.9.0" />
-    <PackageReference Include="LunarLabs.Parser" Version="1.5.5" />
-    <PackageReference Include="LunarLabs.Server" Version="1.5.11" />
+    <PackageReference Include="Discord.Net.WebSocket" Version="3.13.1" />
     <PackageReference Include="Telegram.Bot" Version="14.10.0" />
     <PackageReference Include="Betalgo.OpenAI" Version="6.8.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\LunarParser\LunarParser\LunarParser.csproj" />
+    <ProjectReference Include="..\..\LunarServer\LunarServer\LunarServer.csproj" />
   </ItemGroup>
 
 </Project>
