@@ -13,7 +13,7 @@
     <PackageTags>bot chat discord telegram</PackageTags>
     <RootNamespace>LunarLabs.Bots</RootNamespace>
     <AssemblyName>LunarLabs.Bots</AssemblyName>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net.WebSocket" Version="3.13.1" />
+    <PackageReference Include="Discord.Net.WebSocket" Version="3.19.1" />
     <PackageReference Include="Telegram.Bot" Version="14.10.0" />
     <PackageReference Include="Betalgo.OpenAI" Version="6.8.5" />
   </ItemGroup>

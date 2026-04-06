@@ -100,7 +100,6 @@ namespace LunarLabs.Bots
 
         public Storage Storage { get; private set; }
 
-        private bool _running;
         private string _path;
         public string Path => _path;
 
@@ -242,6 +241,8 @@ namespace LunarLabs.Bots
             return 0;
         }
 
+        private DateTime _lastStorageWrite = DateTime.UtcNow;
+        private static readonly System.Timers.Timer _timer = new();
         private ConcurrentQueue<Action> _delayedQueue = new ConcurrentQueue<Action>();
 
         public void RunLater(Action action)
@@ -254,18 +255,19 @@ namespace LunarLabs.Bots
             foreach (var entry in _connections)
             {
                 Console.WriteLine($"Connecting to {entry.Key}...");
-                new Thread(delegate ()
-                {
-                    entry.Value.Start(_queue);
-                }).Start();
+                entry.Value.Start(_queue);
             }
 
-            var lastStorageWrite = DateTime.UtcNow;
-
             Console.WriteLine("Listening for messages...");
-            _running = true;
-            while (_running)
-            {
+
+            _timer.Interval = TimeSpan.FromSeconds(1).TotalMilliseconds;
+            _timer.Elapsed += (sender, e) => DoBackgroundTasks(null);
+            _timer.AutoReset = true;
+            _timer.Start();
+        }
+
+        private void DoBackgroundTasks(object? state)
+        {
                 BotMessage msg;
                 
                 if (_queue.TryDequeue(out msg))
@@ -298,13 +300,23 @@ namespace LunarLabs.Bots
                     }
                 }
 
-                var diff = DateTime.UtcNow - lastStorageWrite;
+                var diff = DateTime.UtcNow - _lastStorageWrite;
                 if (diff.TotalSeconds >= 5)
                 {
                     this.Storage.Synchronize();
-                    lastStorageWrite = DateTime.UtcNow;
-                }
+                    _lastStorageWrite = DateTime.UtcNow;
+                }            
+        }
+
+        public void Stop()
+        {
+            if (!_timer.Enabled)            
+            {
+                return;
             }
+
+            Console.WriteLine("Stopping bot...");
+            _timer.Stop();
 
             foreach (var entry in _connections)
             {
@@ -318,16 +330,6 @@ namespace LunarLabs.Bots
                 {
                     Console.WriteLine("Failed");
                 }
-            }
-
-        }
-
-        public void Stop()
-        {
-            if (_running)
-            {
-                Console.WriteLine("Stopping bot...");
-                _running = false;
             }
         }
 
@@ -526,7 +528,7 @@ namespace LunarLabs.Bots
                     continue;
                 }
 
-                connection.Send(target, line).Wait();
+                connection.Send(target, line).GetAwaiter().GetResult();
             }
         }
 

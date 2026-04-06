@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 //TO CREATE A BOT => https://discordapp.com/developers/applications/
@@ -15,13 +16,21 @@ namespace LunarLabs.Bots
         private ConcurrentQueue<BotMessage> _queue;
         private DiscordSocketClient _client;
 
+        private readonly ManualResetEventSlim _discordReady = new ManualResetEventSlim(false);
+
         public DiscordConnection(string token)
         {
             _client = new DiscordSocketClient();
 
             //client.Log += Log;
 
-            _client.LoginAsync(TokenType.Bot, token).Wait();
+            _client.LoginAsync(TokenType.Bot, token).GetAwaiter().GetResult();
+        }
+          
+        private Task OnDiscordReady()
+        {
+            _discordReady.Set();
+            return Task.CompletedTask;
         }
 
         private Dictionary<ulong, ISocketMessageChannel> _channels = new Dictionary<ulong, ISocketMessageChannel>();
@@ -29,20 +38,14 @@ namespace LunarLabs.Bots
         private IMessageChannel GetChannel(ulong id)
         {
             var channel = _client.GetChannel(id) as IMessageChannel;
+            if (channel != null)
+                return channel;
 
-            if (channel == null)
-            {
-                var user = _client.GetUserAsync(id).Result;
+            var user = _client.GetUserAsync(id).GetAwaiter().GetResult();
+            if (user == null)
+                return null;
 
-                if (user == null)
-                {
-                    return null;
-                }
-
-                channel = (IMessageChannel)(user.CreateDMChannelAsync().GetAwaiter().GetResult());
-            }
-
-            return channel;
+            return user.CreateDMChannelAsync().GetAwaiter().GetResult();
         }
 
         public async Task Send(object target, string text)
@@ -57,7 +60,12 @@ namespace LunarLabs.Bots
         {
             this._queue = queue;
             _client.MessageReceived += MessageReceived;
-            _client.StartAsync().Wait();
+            _client.Ready += OnDiscordReady;
+
+            _client.StartAsync().GetAwaiter().GetResult();
+
+            // Block here until Discord.Net says the client is ready.
+            _discordReady.Wait();
 
             Console.WriteLine($"Connected to Discord");
         }
